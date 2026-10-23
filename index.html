@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Kaung Htet | Dev Hub</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            font-family: 'JetBrains Mono', monospace;
+            box-sizing: border-box;
+        }
+        html, body {
+            overflow-x: hidden;
+            width: 100%;
+            min-height: 100vh;
+            background-color: #050811;
+            color: #00ffcc;
+        }
+
+        /* Glassmorphic Cyberpunk Card */
+        .terminal-container {
+            background: rgba(10, 15, 30, 0.88);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(0, 255, 204, 0.25);
+            box-shadow: 0 0 35px rgba(0, 255, 204, 0.15), inset 0 0 15px rgba(0, 255, 204, 0.05);
+        }
+
+        /* Radar Scanning Animation */
+        .radar-sweep {
+            position: relative;
+            overflow: hidden;
+        }
+        .radar-sweep::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(90deg, transparent 0%, rgba(0,255,204,0.15) 50%, transparent 100%);
+            animation: sweep 2s infinite linear;
+        }
+        @keyframes sweep {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        /* Smooth Transitions */
+        .smooth-appear {
+            animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Blinking Cursor */
+        .cursor::after {
+            content: '█';
+            animation: blink 0.7s infinite;
+            color: #00ffcc;
+            margin-left: 2px;
+        }
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+
+        /* Syntax Highlighting Styles for Code View */
+        .t-tag { color: #f43f5e; }
+        .t-attr { color: #fbbf24; }
+        .t-val { color: #38bdf8; }
+        .t-cmnt { color: #64748b; font-style: italic; }
+
+        .cyber-btn {
+            background: rgba(15, 23, 42, 0.75);
+            border: 1px solid rgba(0, 255, 204, 0.2);
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .cyber-btn:hover {
+            border-color: #00ffcc;
+            background: rgba(0, 255, 204, 0.1);
+            box-shadow: 0 0 15px rgba(0, 255, 204, 0.25);
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-3 sm:p-5 relative">
+
+    <!-- Ambient Glow Orbs -->
+    <div class="fixed top-1/4 left-1/4 w-72 sm:w-96 h-72 sm:h-96 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
+    <div class="fixed bottom-1/4 right-1/4 w-72 sm:w-96 h-72 sm:h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+    <!-- 1. LIVE SOURCE CODE VIEW EDITOR (FIRST SCREEN) -->
+    <div id="code-view-screen" class="w-full max-w-xl terminal-container rounded-2xl overflow-hidden my-auto relative z-20 transition-all duration-700">
+        <div class="bg-slate-950/90 px-4 py-3 flex items-center justify-between border-b border-cyan-500/20">
+            <div class="flex items-center space-x-2">
+                <span class="w-3 h-3 rounded-full bg-red-500/80 inline-block"></span>
+                <span class="w-3 h-3 rounded-full bg-yellow-500/80 inline-block"></span>
+                <span class="w-3 h-3 rounded-full bg-green-500/80 inline-block"></span>
+            </div>
+            <div class="text-[11px] sm:text-xs text-slate-400 font-bold flex items-center gap-2">
+                <i class="fa-solid fa-code text-cyan-400"></i> index.html — Source Code
+            </div>
+            <div class="text-[10px] text-cyan-400 animate-pulse font-bold">COMPILING UI...</div>
+        </div>
+        
+        <div class="p-4 sm:p-6 text-xs sm:text-sm overflow-x-auto min-h-[320px] max-h-[450px]">
+            <pre id="code-content" class="text-slate-300 cursor leading-relaxed break-all whitespace-pre-wrap"></pre>
+        </div>
+    </div>
+
+    <!-- 2. MAIN TERMINAL UI CONTAINER (COMPILED UI SCREEN) -->
+    <div id="main-terminal" class="w-full max-w-xl terminal-container rounded-2xl overflow-hidden my-auto relative z-10 hidden opacity-0 transition-all duration-700 scale-95">
+        
+        <!-- Terminal Header Bar -->
+        <div class="bg-slate-950/90 px-3.5 sm:px-4 py-3 flex items-center justify-between border-b border-cyan-500/20 select-none">
+            <div class="flex items-center space-x-2">
+                <span class="w-3 h-3 rounded-full bg-red-500/80 inline-block shadow-[0_0_8px_#ef4444]"></span>
+                <span class="w-3 h-3 rounded-full bg-yellow-500/80 inline-block shadow-[0_0_8px_#eab308]"></span>
+                <span class="w-3 h-3 rounded-full bg-green-500/80 inline-block shadow-[0_0_8px_#22c55e]"></span>
+            </div>
+            <div class="text-[11px] sm:text-xs text-cyan-400 font-bold tracking-widest flex items-center gap-2 truncate">
+                <i class="fa-solid fa-terminal text-emerald-400 animate-pulse"></i> KAUNG_HTET_CLI
+            </div>
+            <button id="sound-toggle" onclick="toggleAudio()" class="text-xs text-slate-400 hover:text-cyan-400 transition-colors p-1">
+                <i id="sound-icon" class="fa-solid fa-volume-high"></i>
+            </button>
+        </div>
+
+        <!-- Terminal Output Area -->
+        <div class="p-3.5 sm:p-6 space-y-4 text-xs sm:text-sm">
+            
+            <!-- Live Profile Box with Location Tracker -->
+            <div id="radar-box" class="p-3 sm:p-4 bg-slate-950/80 rounded-xl border border-cyan-500/30 space-y-2.5 radar-sweep">
+                <div class="flex items-center justify-between">
+                    <span class="text-[10px] text-cyan-400 font-bold tracking-wider flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span> GPS_TRACKER
+                    </span>
+                    <span id="loc-status" class="text-[10px] text-yellow-400 animate-pulse">SEARCHING...</span>
+                </div>
+                
+                <div class="flex items-center justify-between gap-2">
+                    <div class="min-w-0">
+                        <h1 class="text-base sm:text-xl font-bold text-white tracking-wide truncate">KAUNG HTET</h1>
+                    </div>
+                    
+                    <div id="location-badge" class="flex items-center gap-1.5 sm:gap-2 bg-yellow-950/30 border border-yellow-500/40 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-lg transition-all duration-500 shrink-0">
+                        <i id="loc-icon" class="fa-solid fa-crosshairs text-yellow-400 animate-spin text-xs" style="animation-duration: 2s;"></i>
+                        <span id="loc-text" class="text-[11px] sm:text-xs font-bold text-yellow-200">LOCATING...</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dynamic Output Logs -->
+            <div id="cli-logs" class="space-y-2.5 sm:space-y-3"></div>
+
+            <!-- Command Prompt Line -->
+            <div id="active-prompt" class="flex items-start gap-2 text-cyan-400 font-mono">
+                <span class="text-emerald-400 font-bold shrink-0">root@kh</span>:<span class="text-blue-400 shrink-0">~</span>$&nbsp;<span id="typing-line" class="text-white cursor break-all"></span>
+            </div>
+
+            <!-- Footer Info -->
+            <div id="terminal-footer" class="pt-3 border-t border-cyan-500/20 flex items-center justify-between text-[10px] sm:text-[11px] text-slate-400 hidden">
+                <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> ALL SYSTEMS ONLINE</span>
+                <span>ENC: AES-256</span>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- WeChat Modal -->
+    <div id="wechatModal" class="fixed inset-0 bg-black/85 backdrop-blur-md hidden items-center justify-center p-4 z-50">
+        <div class="bg-slate-900 border border-cyan-500/40 p-5 sm:p-6 rounded-2xl max-w-xs w-full text-center space-y-4 shadow-[0_0_30px_rgba(0,255,204,0.2)] relative smooth-appear">
+            <button onclick="toggleWeChatQR()" class="absolute top-3 right-3 text-slate-400 hover:text-red-400 text-lg p-1">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <div class="text-xs text-cyan-400 font-bold tracking-widest flex items-center justify-center gap-2">
+                <i class="fa-solid fa-qrcode"></i> WECHAT_SCANNER
+            </div>
+            <div class="bg-white p-3 rounded-xl inline-block border-2 border-cyan-500/50">
+                <img src="https://i.ibb.co/BH7GLcwq/mmqrcode1792719604752.png" alt="WeChat QR Code" class="w-44 h-44 sm:w-48 sm:h-48 object-contain mx-auto">
+            </div>
+            <p class="text-[11px] text-slate-400">[SCAN TO INITIATE CHAT]</p>
+        </div>
+    </div>
+
+    <!-- Script Section -->
+    <script>
+        let audioCtx = null;
+        let soundEnabled = true;
+
+        // Exact Source Code lines shown in Code View before compiling
+        const actualSourceCodeLines = [
+            '<span class="t-cmnt">&lt;!-- Initializing Terminal UI &amp; GPS Tracker --&gt;</span>',
+            '<span class="t-tag">&lt;div</span> <span class="t-attr">id</span>=<span class="t-val">"radar-box"</span> <span class="t-attr">class</span>=<span class="t-val">"gps-tracker"</span><span class="t-tag">&gt;</span>',
+            '  <span class="t-tag">&lt;h1&gt;</span>KAUNG HTET<span class="t-tag">&lt;/h1&gt;</span>',
+            '  <span class="t-tag">&lt;span</span> <span class="t-attr">id</span>=<span class="t-val">"location"</span><span class="t-tag">&gt;</span>Thailand<span class="t-tag">&lt;/span&gt;</span>',
+            '<span class="t-tag">&lt;/div&gt;</span>',
+            '',
+            '<span class="t-tag">&lt;script&gt;</span>',
+            '  <span class="t-val">const</span> contacts = {',
+            '    gmail: <span class="t-val">"Kaunghtet3421565@gmail.com"</span>,',
+            '    phone: <span class="t-val">"0806525647"</span>,',
+            '    facebook: <span class="t-val">"Kaung Htet"</span>,',
+            '    telegram: <span class="t-val">"@mgk755"</span>,',
+            '    tiktok: <span class="t-val">"mg.kaung0126"</span>,',
+            '    wechat: <span class="t-val">"QR Code Module"</span>',
+            '  };',
+            '  <span class="t-val">initTerminalCLI</span>(contacts);',
+            '<span class="t-tag">&lt;/script&gt;</span>'
+        ];
+
+        function playKeySound() {
+            if (!soundEnabled) return;
+            try {
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(600 + Math.random() * 400, audioCtx.currentTime);
+                
+                gain.gain.setValueAtTime(0.03, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.04);
+                
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.04);
+            } catch (e) {}
+        }
+
+        function toggleAudio() {
+            soundEnabled = !soundEnabled;
+            const icon = document.getElementById('sound-icon');
+            icon.className = soundEnabled ? 'fa-solid fa-volume-high' : 'fa-solid fa-volume-xmark text-red-400';
+        }
+
+        // Type Source Code Line-by-Line in Code View
+        const codeContent = document.getElementById('code-content');
+        let lineIdx = 0;
+
+        function typeCodeView() {
+            if (lineIdx < actualSourceCodeLines.length) {
+                codeContent.innerHTML += actualSourceCodeLines[lineIdx] + '\n';
+                lineIdx++;
+                playKeySound();
+                setTimeout(typeCodeView, 110);
+            } else {
+                // Code typing complete -> compile to UI
+                setTimeout(compileCodeToUI, 700);
+            }
+        }
+
+        function compileCodeToUI() {
+            const codeScreen = document.getElementById('code-view-screen');
+            const mainTerminal = document.getElementById('main-terminal');
+
+            codeScreen.classList.add('opacity-0', 'scale-95');
+            
+            setTimeout(() => {
+                codeScreen.classList.add('hidden');
+                
+                mainTerminal.classList.remove('hidden');
+                setTimeout(() => {
+                    mainTerminal.classList.remove('opacity-0', 'scale-95');
+                    startLocationTracking();
+                    setTimeout(runSequence, 600);
+                }, 50);
+            }, 500);
+        }
+
+        // Location Tracker Simulation
+        function startLocationTracking() {
+            const statusEl = document.getElementById('loc-status');
+            const badgeEl = document.getElementById('location-badge');
+            const iconEl = document.getElementById('loc-icon');
+            const textEl = document.getElementById('loc-text');
+
+            setTimeout(() => {
+                statusEl.textContent = 'LOCKING GPS...';
+                textEl.textContent = 'SCANNING...';
+            }, 800);
+
+            setTimeout(() => {
+                statusEl.textContent = 'LOCKED';
+                statusEl.className = 'text-[10px] text-emerald-400 font-bold';
+
+                badgeEl.className = 'flex items-center gap-1.5 sm:gap-2 bg-red-950/40 border border-red-500/50 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-lg transition-all duration-500 smooth-appear shrink-0';
+                iconEl.className = 'fa-solid fa-location-dot text-red-400 animate-bounce text-xs';
+                textEl.className = 'text-[11px] sm:text-xs font-bold text-red-200';
+                textEl.textContent = 'Thailand';
+            }, 2200);
+        }
+
+        // Contacts Sequence
+        const sequence = [
+            {
+                cmd: "get --contact gmail",
+                output: {
+                    icon: "fa-solid fa-envelope text-red-400",
+                    label: "Gmail",
+                    value: "Kaunghtet3421565@gmail.com",
+                    action: "[CONNECT]",
+                    link: "mailto:Kaunghtet3421565@gmail.com"
+                }
+            },
+            {
+                cmd: "get --contact phone",
+                output: {
+                    icon: "fa-solid fa-phone text-emerald-400",
+                    label: "Phone",
+                    value: "0806525647",
+                    action: "[CALL]",
+                    link: "tel:0806525647"
+                }
+            },
+            {
+                cmd: "get --contact facebook",
+                output: {
+                    icon: "fa-brands fa-facebook text-blue-500",
+                    label: "Facebook",
+                    value: "Kaung Htet",
+                    action: "[VISIT]",
+                    link: "https://www.facebook.com/share/1CpGpfaxLy/"
+                }
+            },
+            {
+                cmd: "get --contact telegram",
+                output: {
+                    icon: "fa-brands fa-telegram text-sky-400",
+                    label: "Telegram",
+                    value: "@mgk755",
+                    action: "[CHAT]",
+                    link: "https://t.me/mgk755"
+                }
+            },
+            {
+                cmd: "get --contact tiktok",
+                output: {
+                    icon: "fa-brands fa-tiktok text-pink-400",
+                    label: "TikTok",
+                    value: "mg.kaung0126",
+                    action: "[WATCH]",
+                    link: "https://www.tiktok.com/@mg.kaung0126"
+                }
+            },
+            {
+                cmd: "get --contact wechat",
+                output: {
+                    icon: "fa-brands fa-weixin text-green-400",
+                    label: "WeChat",
+                    value: "Click to Scan QR",
+                    action: "[QR CODE]",
+                    isWechat: true
+                }
+            }
+        ];
+
+        const typingLine = document.getElementById("typing-line");
+        const cliLogs = document.getElementById("cli-logs");
+        const activePrompt = document.getElementById("active-prompt");
+        const terminalFooter = document.getElementById("terminal-footer");
+
+        let stepIndex = 0;
+        let charIndex = 0;
+
+        function runSequence() {
+            if (stepIndex >= sequence.length) {
+                activePrompt.classList.add("hidden");
+                terminalFooter.classList.remove("hidden");
+                return;
+            }
+
+            const currentStep = sequence[stepIndex];
+            const cmdText = currentStep.cmd;
+
+            if (charIndex < cmdText.length) {
+                typingLine.innerHTML += cmdText.charAt(charIndex);
+                charIndex++;
+                playKeySound();
+                setTimeout(runSequence, 35);
+            } else {
+                setTimeout(() => {
+                    renderOutput(currentStep);
+                    typingLine.innerHTML = "";
+                    charIndex = 0;
+                    stepIndex++;
+                    setTimeout(runSequence, 300);
+                }, 180);
+            }
+        }
+
+        function renderOutput(step) {
+            const logCmd = document.createElement("div");
+            logCmd.className = "flex items-start gap-2 text-cyan-400 font-mono text-xs sm:text-sm";
+            logCmd.innerHTML = `<span class="text-emerald-400 font-bold shrink-0">root@kh</span>:<span class="text-blue-400 shrink-0">~</span>$&nbsp;<span class="text-white break-all">${step.cmd}</span>`;
+            cliLogs.appendChild(logCmd);
+
+            const data = step.output;
+            const card = document.createElement("div");
+            card.className = "smooth-appear my-1.5 sm:my-2";
+
+            if (data.isWechat) {
+                card.innerHTML = `
+                    <button onclick="toggleWeChatQR()" class="w-full cyber-btn p-2.5 sm:p-3 rounded-xl flex items-center justify-between text-left">
+                        <div class="flex items-center gap-2.5 sm:gap-3 min-w-0 pr-2">
+                            <i class="${data.icon} text-sm sm:text-base w-4 sm:w-5 shrink-0"></i>
+                            <span class="text-slate-200 font-semibold text-xs sm:text-sm shrink-0">${data.label}:</span>
+                            <span class="text-slate-400 text-[11px] sm:text-xs truncate">${data.value}</span>
+                        </div>
+                        <span class="text-[9px] sm:text-[10px] text-green-400 font-bold shrink-0 bg-green-950/80 px-2 sm:px-2.5 py-1 rounded-lg border border-green-500/40">${data.action}</span>
+                    </button>
+                `;
+            } else {
+                card.innerHTML = `
+                    <a href="${data.link}" target="_blank" class="cyber-btn p-2.5 sm:p-3 rounded-xl flex items-center justify-between">
+                        <div class="flex items-center gap-2.5 sm:gap-3 min-w-0 pr-2">
+                            <i class="${data.icon} text-sm sm:text-base w-4 sm:w-5 shrink-0"></i>
+                            <span class="text-slate-200 font-semibold text-xs sm:text-sm shrink-0">${data.label}:</span>
+                            <span class="text-slate-400 text-[11px] sm:text-xs truncate">${data.value}</span>
+                        </div>
+                        <span class="text-[9px] sm:text-[10px] text-cyan-400 font-bold shrink-0 bg-cyan-950/80 px-2 sm:px-2.5 py-1 rounded-lg border border-cyan-500/40">${data.action}</span>
+                    </a>
+                `;
+            }
+            cliLogs.appendChild(card);
+        }
+
+        function toggleWeChatQR() {
+            const modal = document.getElementById('wechatModal');
+            modal.classList.toggle('hidden');
+            modal.classList.toggle('flex');
+        }
+
+        // Start typing code view
+        window.onload = () => {
+            setTimeout(typeCodeView, 300);
+        };
+    </script>
+</body>
+</html>
